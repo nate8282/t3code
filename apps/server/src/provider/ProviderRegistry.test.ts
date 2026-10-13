@@ -3204,6 +3204,112 @@ it.layer(
       ),
     );
 
+    it.effect("points the signed-out hint at the configured home over an inherited one", () => {
+      const claudeConfigDir = "/synthetic/claude-work";
+      const inheritedConfigDir = "/synthetic/claude-inherited";
+      const cwd = "/synthetic/project";
+      const environment = { CLAUDE_CONFIG_DIR: inheritedConfigDir };
+      const recorded = recordingMockSpawnerLayer((args) => {
+        const joined = args.join(" ");
+        if (joined === "--version") return { stdout: "1.0.0\n", stderr: "", code: 0 };
+        throw new Error(`Unexpected args: ${joined}`);
+      });
+
+      return Effect.gen(function* () {
+        const path = yield* Path.Path;
+        const status = yield* checkClaudeProviderStatus(
+          {
+            ...defaultClaudeSettings,
+            homePath: claudeConfigDir,
+          },
+          claudeCapabilities({
+            tokenSource: "none",
+            apiKeySource: "none",
+            apiProvider: "firstParty",
+          }),
+          environment,
+          cwd,
+        );
+        assert.strictEqual(status.status, "error");
+        assert.strictEqual(status.auth.status, "unauthenticated");
+        // A bare `claude auth login` would sign in the default profile, so the
+        // hint has to name the same config dir the probes were launched with.
+        const launchedConfigDir = path.resolve(claudeConfigDir);
+        assert.deepStrictEqual(
+          recorded.commands.map((command) => command.env?.CLAUDE_CONFIG_DIR),
+          [launchedConfigDir],
+        );
+        expect(status.message).toContain(
+          `run \`claude auth login\` on this environment's machine from ${JSON.stringify(path.resolve(cwd))}, with CLAUDE_CONFIG_DIR set to ${JSON.stringify(launchedConfigDir)}`,
+        );
+        expect(status.message).not.toContain(inheritedConfigDir);
+        assert.deepStrictEqual(environment, { CLAUDE_CONFIG_DIR: inheritedConfigDir });
+      }).pipe(Effect.provide(recorded.layer));
+    });
+
+    it.effect("points the signed-out hint at an inherited CLAUDE_CONFIG_DIR as written", () => {
+      // Inherited env vars are not shell-expanded, so the `~` stays literal.
+      const inheritedConfigDir = "~/.claude-inherited";
+      const recorded = recordingMockSpawnerLayer((args) => {
+        const joined = args.join(" ");
+        if (joined === "--version") return { stdout: "1.0.0\n", stderr: "", code: 0 };
+        throw new Error(`Unexpected args: ${joined}`);
+      });
+
+      return Effect.gen(function* () {
+        const path = yield* Path.Path;
+        const status = yield* checkClaudeProviderStatus(
+          defaultClaudeSettings,
+          claudeCapabilities({
+            tokenSource: "none",
+            apiKeySource: "none",
+            apiProvider: "firstParty",
+          }),
+          { CLAUDE_CONFIG_DIR: inheritedConfigDir },
+        );
+        assert.strictEqual(status.status, "error");
+        assert.strictEqual(status.auth.status, "unauthenticated");
+        assert.deepStrictEqual(
+          recorded.commands.map((command) => command.env?.CLAUDE_CONFIG_DIR),
+          [inheritedConfigDir],
+        );
+        expect(status.message).toContain(
+          `run \`claude auth login\` on this environment's machine from ${JSON.stringify(path.resolve("."))}, with CLAUDE_CONFIG_DIR set to ${JSON.stringify(inheritedConfigDir)}`,
+        );
+      }).pipe(Effect.provide(recorded.layer));
+    });
+
+    it.effect("keeps the signed-out hint generic without a Claude config dir", () => {
+      const recorded = recordingMockSpawnerLayer((args) => {
+        const joined = args.join(" ");
+        if (joined === "--version") return { stdout: "1.0.0\n", stderr: "", code: 0 };
+        throw new Error(`Unexpected args: ${joined}`);
+      });
+
+      return Effect.gen(function* () {
+        const status = yield* checkClaudeProviderStatus(
+          defaultClaudeSettings,
+          claudeCapabilities({
+            tokenSource: "none",
+            apiKeySource: "none",
+            apiProvider: "firstParty",
+          }),
+          {},
+          "/synthetic/project",
+        );
+        assert.strictEqual(status.status, "error");
+        assert.strictEqual(status.auth.status, "unauthenticated");
+        // Default users are not handed a config dir the launch never set.
+        assert.deepStrictEqual(
+          recorded.commands.map((command) => command.env?.CLAUDE_CONFIG_DIR),
+          [undefined],
+        );
+        expect(status.message).toContain("`claude auth login`");
+        expect(status.message).not.toContain("CLAUDE_CONFIG_DIR");
+        expect(status.message).not.toContain("/synthetic/project");
+      }).pipe(Effect.provide(recorded.layer));
+    });
+
     it.effect("keeps an API key install authenticated when it reports no token source", () =>
       Effect.gen(function* () {
         // `ANTHROPIC_API_KEY` never populates `tokenSource`, so reading that
