@@ -13,3 +13,5 @@ Router: installed child_env clears inherited Claude/Codex credential overrides. 
 Unresolved: original daily renewal failure, candidate probe/refresh interaction, and natural-refresh acceptance. Do not claim renewed-login reliability from a fresh-login smoke test. A supported long-lived setup token is being considered; its Remote Control and Claude.ai-connected-service limitations require preserving the user's needs.
 
 Next: exact-head cross-family Review Jury, personal draft PR, isolated running-product check. Do not run a candidate against live ~/.t3/userdata or restart the user's active app. Do not copy, log, mutate or force-expire credentials. Preserve the independent daily-renewal investigation as a separate seam.
+
+Review checkpoint: personal PR https://github.com/nate8282/t3code/pull/1 is linked to the T3 thread. Both exact-head strong-family reviews and deterministic gates pass at 51d91839. Structured verdict is .codex/qa/claude-recovery-verdict.json. Isolated real web client confirms profile-specific onboarding guidance; daily renewal remains open.

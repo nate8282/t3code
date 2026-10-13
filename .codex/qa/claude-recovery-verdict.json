@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.1",
+  "delivery_lineage_id": "t3-claude-profile-recovery-20261012",
+  "head": "51d91839ba1e928785dc194dd88b8afe01a4e1f7",
+  "contract_digest": "c8e20b5e0a1a6817cb6faadcb169817df716f2cf4c0653d895566badb38650a2",
+  "outcome": "clean",
+  "findings": [],
+  "excluded": []
+}
